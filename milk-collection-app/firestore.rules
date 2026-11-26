@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each center can read/write only its own data
+    match /centers/{centerId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == centerId;
+    }
+  }
+}
