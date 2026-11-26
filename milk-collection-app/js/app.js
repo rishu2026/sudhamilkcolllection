@@ -1,3 +1,4 @@
+
 const $=i=>document.getElementById(i),app=$('app'),mn=h=>$('main').innerHTML=h;
 
 const DR={fat:417,snf:278,hi:818.23};
@@ -234,6 +235,154 @@ async function mk(){
           fd=+$('bd').value;
 
     $('bl').innerHTML=`<div class=card id=bill><div style=text-align:center><img src="assets/logo.png" height=60><h3 style=margin:4px>${C.samiti} (${C.code})</h3><small>Sudha Dairy • ${C.addr||''} • ${C.mobile}</small></div><p><b>${f.name}</b> ${f.code||''}<br>${a} → ${b}</p><div class=tbl><table><tr><th>Date<th>Shift<th>Qty<th>Fat<th>SNF<th>Rate<th>₹</tr>${op(r,x=>`<tr><td>${x.date}<td>${x.shift=='M'?'Morning':'Evening'}<td>${x.qty}<td>${x.fat||'-'}<td>${x.snf||'-'}<td>${x.rate}<td>${(+x.amt).toFixed(2)}</tr>`)}</table></div><p>Total milk: <b>${q.toFixed(2)} kg</b><br>Total amount: <b>₹${s.toFixed(2)}</b><br>Advance: −₹${ad}<br>Feed/other: −₹${fd}<br><big><b>Net payable: ₹${(s-ad-fd).toFixed(2)}</b></big></p><div style="display:flex;justify-content:space-between;margin-top:40px"><span>Farmer signature</span><span>Sachiv signature</span></div></div><button onclick=print()>⬇ Download PDF</button>`
+}
+
+// CSV REPORT
+async function csv(){
+    const a=$('b1').value,
+          b=$('b2').value,
+          r=(await ents(a,b)).sort(srt),
+          s='Date,Shift,Farmer,Qty,Fat,SNF,Rate,Amount\n'+r.map(x=>[x.date,x.shift,'"'+x.fname+'"',x.qty,x.fat,x.snf,x.rate,x.amt].join(',')).join('\n'),
+          l=document.createElement('a');
+
+    l.href=URL.createObjectURL(new Blob(['\ufeff'+s],{type:'text/csv'}));
+    l.download=`report_${a}_${b}.csv`;
+    l.click()
+}
+
+// PROFIT
+function profV(){
+    mn(`<h2>${t('profit')}</h2>${tg()}<div class=card><b>BMC / Sudha Dairy</b><div class=g><label>${t('qty')}<input id=pq type=number step=any oninput=pc()></label><label>Fat %<input id=pf type=number step=any oninput=pc()></label><label>SNF %<input id=pn type=number step=any oninput=pc()></label></div><p id=pr></p><button onclick=pv()>${t('save')}</button></div><label>Month<input type=month id=pm value="${D.slice(0,7)}" onchange=pt()></label><div id=pl class="card tbl"></div>`);
+    pt()
+}
+
+// UPDATED PROFIT CALCULATION
+function pc(){
+    const q=+$('pq').value,
+          f=+$('pf').value,
+          s=+$('pn').value;
+
+    PA=q&&f&&s?+(rt(f,s)*q).toFixed(2):0;
+
+    $('pr').textContent=PA
+        ?'BMC rate ₹'+rt(f,s)+'/kg → ₹'+PA
+        :'';
+}
+
+// UPDATED BMC SAVE
+async function pv(){
+    pc();
+
+    await col('bmc').doc(D+S).set({
+        date:D,
+        shift:S,
+        qty:+$('pq').value||0,
+        fat:+$('pf').value||0,
+        snf:+$('pn').value||0,
+        amt:PA
+    });
+
+    PA=0;
+    profV();
+}
+
+// UPDATED PROFIT TABLE
+// Includes farmer-entry dates even when BMC entry is missing
+async function pt(){
+    const m=$('pm').value,
+          b=(await col('bmc')
+              .where('date','>=',m+'-01')
+              .where('date','<=',m+'-31')
+              .get()).docs.map(d=>d.data()),
+          e=await ents(m+'-01',m+'-31'),
+          k={};
+
+    // Add all BMC records
+    b.forEach(x=>{
+        k[x.date+x.shift]=x;
+    });
+
+    // Add farmer-entry dates missing from BMC
+    e.forEach(x=>{
+        k[x.date+x.shift]=k[x.date+x.shift]||{
+            date:x.date,
+            shift:x.shift,
+            qty:0,
+            amt:0
+        };
+    });
+
+    const a=Object.values(k).sort(srt);
+
+    let tb=0,tf=0;
+
+    $('pl').innerHTML=`<table>
+        <tr>
+            <th>Date
+            <th>Shift
+            <th>BMC kg
+            <th>BMC ₹
+            <th>Farmers ₹
+            <th>Profit
+        </tr>
+        ${op(a,x=>{
+            const f=sum(
+                e.filter(y=>y.date==x.date&&y.shift==x.shift),
+                'amt'
+            );
+
+            tb+=x.amt;
+            tf+=f;
+
+            return `<tr>
+                <td>${x.date}
+                <td>${x.shift}
+                <td>${x.qty}
+                <td>${x.amt}
+                <td>${f.toFixed(2)}
+                <td><b>${(x.amt-f).toFixed(2)}</b>
+            </tr>`;
+        })}
+        <tr>
+            <th colspan=3>Total
+            <th>${tb.toFixed(2)}
+            <th>${tf.toFixed(2)}
+            <th>${(tb-tf).toFixed(2)}
+        </tr>
+    </table>`;
+}
+
+// SETTINGS
+function setV(){
+    const r=C.rates;
+
+    mn(`<h2>${t('set')}</h2><div class=card><p>${C.samiti} (${C.code})<br>${C.sachiv} • ${C.mobile}<br>${C.addr||''}</p><div class=g><label>Fat ₹/kg (3.0–5.9)<input id=r1 type=number step=any value=${r.fat}></label><label>SNF ₹/kg<input id=r2 type=number step=any value=${r.snf}></label><label>Fat ₹/kg (6.0+)<input id=r3 type=number step=any value=${r.hi}></label></div><button onclick=sr()>${t('save')}</button> <button onclick=bk()>⬇ Backup (all data)</button><p><small>Defaults: rate chart effective 10-07-2026</small></p></div>`)
+}
+
+async function sr(){
+    C.rates={
+        fat:+$('r1').value,
+        snf:+$('r2').value,
+        hi:+$('r3').value
+    };
+
+    await db.doc('centers/'+U.uid).update({rates:C.rates});
+    alert('Saved')
+}
+
+// BACKUP
+async function bk(){
+    const o={center:C};
+
+    for(const n of ['farmers','entries','bmc'])
+        o[n]=(await col(n).get()).docs.map(d=>({id:d.id,...d.data()}));
+
+    const l=document.createElement('a');
+    l.href=URL.createObjectURL(new Blob([JSON.stringify(o,null,1)],{type:'application/json'}));
+    l.download='backup_'+D0()+'.json';
+    l.click()
+}
+}<td>${x.snf||'-'}<td>${x.rate}<td>${(+x.amt).toFixed(2)}</tr>`)}</table></div><p>Total milk: <b>${q.toFixed(2)} kg</b><br>Total amount: <b>₹${s.toFixed(2)}</b><br>Advance: −₹${ad}<br>Feed/other: −₹${fd}<br><big><b>Net payable: ₹${(s-ad-fd).toFixed(2)}</b></big></p><div style="display:flex;justify-content:space-between;margin-top:40px"><span>Farmer signature</span><span>Sachiv signature</span></div></div><button onclick=print()>⬇ Download PDF</button>`
 }
 
 // CSV REPORT
