@@ -14,3 +14,20 @@ table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;borde
 .bh{display:flex;gap:12px;border:1px solid #cfe6f8;border-radius:8px;padding:10px;margin:10px 0}.bh>div{flex:1}.bh>div:last-child{text-align:right}
 .sum{width:min(320px,100%);margin:12px 0 0 auto}.sum td{border:0;padding:4px 6px}.sum td:last-child{text-align:right}.sum .net td{border-top:2px solid var(--d);font-size:16px;font-weight:700}
 .sg{display:flex;justify-content:space-between;margin-top:44px}.sg span{border-top:1px solid #999;padding-top:4px;min-width:130px;text-align:center}
+#bill{border-top:10px solid #14449d;padding:18px 16px;max-width:820px;margin:0 auto 14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.b_c{text-align:center}.b_s{color:#666;font-size:13px}.b_c h2{margin:6px 0 2px;color:#14213d;font-size:22px}
+.b_t{display:inline-block;margin:10px 0 14px;padding:0 24px 4px;color:#14449d;font-size:20px;border-bottom:2px solid #14449d}
+.b_box{display:flex;border:1px solid #c5cfe0;border-radius:10px;background:#f6f9fe;padding:12px 6px;margin-bottom:12px}
+.b_box>div{flex:1;padding:0 12px}.b_box>div+div{border-left:1px solid #c5cfe0}
+.b_box h4{margin:0 0 6px;color:#14449d;font-size:12px;letter-spacing:.5px}.b_box p{margin:3px 0}
+.b_row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-top:6px}
+.b_tbl{margin:10px 0}.b_tbl th{background:#14449d;color:#fff;padding:9px 8px}.b_tbl td{padding:6px 8px;border:0}
+.b_tbl tr:nth-child(odd) td{background:#f4f7fc}.b_tbl .n{text-align:right}.b_ab{color:#b33}
+.b_tbl tr.b_tot td{background:#e0e9f8;font-weight:700;border-top:1px solid #7d9bd1;padding:9px 8px}
+.b_fin{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.b_sum{flex:1;min-width:200px;border:1px solid #c5cfe0;border-radius:10px;padding:10px 14px}.b_sum h4{margin:0 0 6px;color:#14449d;font-size:13px}.b_sum p{margin:4px 0}
+.b_q{flex:1;min-width:240px}.b_k{width:100%}.b_k td{border:0;padding:4px 8px;color:#555}.b_k td:last-child{text-align:right;color:#000}
+.b_net{display:flex;justify-content:space-between;align-items:center;background:#14449d;color:#fff;padding:10px 14px;font-weight:700}.b_net b{font-size:20px}
+.b_w{margin:14px 0 30px;font-weight:700}.b_sg{display:flex;justify-content:space-between;color:#555}
+.b_sg span{border-top:1.5px solid #000;padding-top:4px;min-width:42%}.b_sg span:last-child{text-align:right}
+.b_f{margin-top:18px;padding-top:10px;border-top:1px solid #ddd;text-align:center;color:#555;font-size:12px}
