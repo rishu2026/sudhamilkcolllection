@@ -51,8 +51,39 @@ async function df(id){if(confirm('Delete farmer? Past entries stay.')){await col
 
 // ============ 7. BILLING (PDF) ============
 async function billV(){await fl();mn(`<h2>${t('bill')}</h2><div class=card><label>${t('farmer')}<select id=bf>${op(F,x=>`<option value="${x.id}">${x.code||''} ${x.name}</option>`)}</select></label><div class=g><label>From<input type=date id=b1 value="${D.slice(0,8)}01"></label><label>To<input type=date id=b2 value="${D}"></label><label>Advance ₹<input id=ba type=number value=0></label><label>Cattle feed / other ₹<input id=bd type=number value=0></label></div><div class=tg>${[['1–10',1,10],['11–20',11,20],['21–end',21,31]].map(([n,a,b])=>`<button onclick="sp(${a},${b})">${n}</button>`).join('')}<button onclick="sp(1,31)">Full month</button></div><button onclick=mk()>Generate bill</button> <button onclick=csv()>Report (Excel CSV)</button></div><div id=bl></div>`)}
-async function mk(){const id=$('bf').value,a=$('b1').value,b=$('b2').value,f=F.find(x=>x.id==id);if(!f)return;const r=(await ents(a,b)).filter(x=>x.fid==id).sort(srt),q=sum(r,'qty'),s=sum(r,'amt'),ad=+$('ba').value,fd=+$('bd').value;
-$('bl').innerHTML=`<div class=card id=bill><div style=text-align:center><img src="assets/logo.png" height=60><h2 style=margin:4px>${C.samiti}</h2><div>Code: ${C.code} • Sudha Dairy</div><h3 style="margin:8px 0;color:#0d47a1">MILK PAYMENT BILL</h3></div><div class=bh><div><b>Samiti / Sachiv</b><br>Sachiv: ${C.sachiv}<br>Contact: ${C.mobile}<br>${C.addr||''}</div><div><b>Farmer</b><br>Name: ${f.name}<br>Code: ${f.code||'-'}<br>Mobile: ${f.mobile||'-'}</div></div><p>Period: <b>${a}</b> – <b>${b}</b> &nbsp;|&nbsp; Bill date: ${D0()}</p><div class=tbl><table><tr><th>Date<th>Shift<th>Qty<th>Fat<th>SNF<th>Rate<th>₹</tr>${op(r,x=>`<tr><td>${x.date}<td>${x.shift=='M'?'Morning':'Evening'}<td>${x.qty}<td>${x.fat||'-'}<td>${x.snf||'-'}<td>${x.rate}<td>${(+x.amt).toFixed(2)}</tr>`)}<tr><th colspan=2>Total<th>${q.toFixed(2)}<th colspan=3><th>${s.toFixed(2)}</tr></table></div><table class=sum><tr><td>Total milk<td>${q.toFixed(2)} kg</tr><tr><td>Total amount<td>₹ ${s.toFixed(2)}</tr><tr><td>Less: Advance<td>− ₹ ${ad.toFixed(2)}</tr><tr><td>Less: Feed / other<td>− ₹ ${fd.toFixed(2)}</tr><tr class=net><td>Net payable<td>₹ ${(s-ad-fd).toFixed(2)}</tr></table><div class=sg><span>Farmer signature</span><span>Sachiv signature</span></div></div><button onclick=print()>⬇ Download PDF</button>`}
+// ---------- BILL HELPERS ----------
+const SHOWFS=false; // true = also show Fat and SNF columns on the bill
+const fd=d=>d.split('-').reverse().join('-');
+const money=n=>(+n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ymd=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+function words(n){if(n<0)return 'Minus '+words(-n);
+const o=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'],tn=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+const two=x=>x<20?o[x]:tn[x/10|0]+(x%10?' '+o[x%10]:'');
+const three=x=>(x>99?o[x/100|0]+' Hundred'+(x%100?' ':''):'')+(x%100?two(x%100):'');
+let r=Math.floor(n),p=Math.round((n-r)*100),s='';
+for(const [v,w] of [[1e7,'Crore'],[1e5,'Lakh'],[1e3,'Thousand']])if(r>=v){s+=three(Math.floor(r/v))+' '+w+' ';r%=v}
+s+=r?three(r):(s?'':'Zero');
+return 'Rupees '+s.trim()+(p?' and '+two(p)+' Paise':'')+' Only'}
+
+// ---------- BILL ----------
+async function mk(){const id=$('bf').value,a=$('b1').value,b=$('b2').value,f=F.find(x=>x.id==id);if(!f)return;
+const r=(await ents(a,b)).filter(x=>x.fid==id).sort(srt);
+if(!r.length){$('bl').innerHTML='<p>No entries found for this farmer in this period.</p>';return}
+const ad=+$('ba').value||0,fe=+$('bd').value||0,q=sum(r,'qty'),s=sum(r,'amt'),net=s-ad-fe,days=new Set(r.map(x=>x.date)).size,mq=sum(r.filter(x=>x.shift=='M'),'qty');
+const kk=(d,h)=>d+(h=='M'?0:1),have={};r.forEach(x=>(have[kk(x.date,x.shift)]=have[kk(x.date,x.shift)]||[]).push(x));
+const last=kk(r[r.length-1].date,r[r.length-1].shift),rows=[];
+for(let d=new Date(r[0].date+'T00:00:00'),end=0;!end;d.setDate(d.getDate()+1))for(const h of['M','E']){const k=kk(ymd(d),h);if(k>last){end=1;break}rows.push(...(have[k]||[{date:ymd(d),shift:h,ab:1}]))}
+const rw=x=>`<tr><td>${fd(x.date)}<td>${x.shift=='M'?'Morning':'Evening'}${SHOWFS?`<td class=n>${x.fat||'-'}<td class=n>${x.snf||'-'}`:''}<td class=n>${x.ab?'<span class=b_ab>Absent</span>':(+x.qty).toFixed(2)}<td class=n>${x.ab?'—':(+x.rate).toFixed(2)}<td class=n>${x.ab?'—':money(x.amt)}</tr>`;
+const ini=C.samiti.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(),no=`${ini}-${C.code}-${String(f.code||0).padStart(4,'0')}-${b.slice(2).replace(/-/g,'')}`,today=fd(D0());
+$('bl').innerHTML=`<div class=card id=bill>
+<div class=b_c><img src="assets/logo.png" height=56><div class=b_s>COMFED · Sudha Dairy</div><h2>${C.samiti}</h2><div class=b_s>Society Code: ${C.code}${C.addr?'  |  '+C.addr:''}</div><h3 class=b_t>MILK PAYMENT BILL</h3></div>
+<div class=b_box><div><h4>SOCIETY / SACHIV</h4><p>Sachiv: ${C.sachiv}<p>Contact: ${C.mobile}<p>${C.addr||''}</div><div><h4>FARMER</h4><p>Name: ${f.name}<p>Farmer Code: ${f.code||'-'}<p>Mobile: ${f.mobile||'-'}</div></div>
+<div class=b_row><b>Bill No: ${no}</b><span>Bill Date: ${today}</span></div><div class=b_s>Period: ${fd(a)} to ${fd(b)}</div>
+<div class=tbl><table class=b_tbl><tr><th>Date<th>Shift${SHOWFS?'<th class=n>Fat<th class=n>SNF':''}<th class=n>Qty (kg)<th class=n>Rate (₹/kg)<th class=n>Amount (₹)</tr>${op(rows,rw)}<tr class=b_tot><td colspan=${SHOWFS?4:2}>TOTAL<td class=n>${q.toFixed(2)}<td><td class=n>${money(s)}</tr></table></div>
+<div class=b_fin><div class=b_sum><h4>SUMMARY</h4><p>Days of supply: ${days}<p>Average per day: ${(q/days).toFixed(2)} kg<p>Morning total: ${mq.toFixed(2)} kg<p>Evening total: ${(q-mq).toFixed(2)} kg</div>
+<div class=b_q><table class=b_k><tr><td>Total milk<td>${q.toFixed(2)} kg<tr><td>Total amount<td>₹ ${money(s)}<tr><td>Less: Advance<td>– ₹ ${money(ad)}<tr><td>Less: Feed / other<td>– ₹ ${money(fe)}</table><div class=b_net><span>NET PAYABLE</span><b>₹ ${money(net)}</b></div></div></div>
+<div class=b_w>In words: ${words(net)}</div><div class=b_sg><span>Farmer Signature</span><span>Sachiv Signature</span></div>
+<div class=b_f>This is a computer-generated bill. Printed on ${today}. For queries call: ${C.mobile}</div></div><button onclick=print()>⬇ Download PDF</button>`}
 function sp(a,b){const m=D.slice(0,8),l=new Date(+D.slice(0,4),+D.slice(5,7),0).getDate();$('b1').value=m+String(a).padStart(2,'0');$('b2').value=m+String(Math.min(b,l)).padStart(2,'0')}
 async function csv(){const a=$('b1').value,b=$('b2').value,r=(await ents(a,b)).sort(srt),s='Date,Shift,Farmer,Qty,Fat,SNF,Rate,Amount\n'+r.map(x=>[x.date,x.shift,'"'+x.fname+'"',x.qty,x.fat,x.snf,x.rate,x.amt].join(',')).join('\n'),l=document.createElement('a');l.href=URL.createObjectURL(new Blob(['\ufeff'+s],{type:'text/csv'}));l.download=`report_${a}_${b}.csv`;l.click()}
 
