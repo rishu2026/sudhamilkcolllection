@@ -9,3 +9,8 @@ label{display:block;font-size:13px;font-weight:600}.card{background:#fff;border-
 table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:6px;border-bottom:1px solid #e1eef9;text-align:left}th{background:var(--l)}.tbl{overflow-x:auto}.sm{padding:4px 8px;margin:0}.x{background:#e53935}
 @media(max-width:720px){#shell{flex-direction:column}#side{width:100%;flex-direction:row;overflow-x:auto;align-items:center}#side img{height:36px}#side b,#side small{display:none}#side button{width:auto}}
 @media print{body *{visibility:hidden}#bill,#bill *{visibility:visible}#bill{position:absolute;left:0;top:0;width:100%;box-shadow:none}}
+@page{size:A4;margin:12mm}
+.tg input{flex:1;min-width:120px}
+.bh{display:flex;gap:12px;border:1px solid #cfe6f8;border-radius:8px;padding:10px;margin:10px 0}.bh>div{flex:1}.bh>div:last-child{text-align:right}
+.sum{width:min(320px,100%);margin:12px 0 0 auto}.sum td{border:0;padding:4px 6px}.sum td:last-child{text-align:right}.sum .net td{border-top:2px solid var(--d);font-size:16px;font-weight:700}
+.sg{display:flex;justify-content:space-between;margin-top:44px}.sg span{border-top:1px solid #999;padding-top:4px;min-width:130px;text-align:center}
